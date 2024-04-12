@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.security.InvalidParameterException;
 import java.util.List;
@@ -15,9 +17,11 @@ import java.util.List;
 @Service
 public class JokeServiceImpl implements JokeService {
     private final WebClient apiClient;
+    private final Scheduler scheduler;
 
     public JokeServiceImpl(@Value("${app.jokes-service-url:https://official-joke-api.appspot.com/random_joke}") String jokesServiceUrl) {
         this.apiClient = WebClient.create(jokesServiceUrl);
+        this.scheduler = Schedulers.newBoundedElastic(5, 10, "group");
     }
 
     @Override
@@ -31,6 +35,7 @@ public class JokeServiceImpl implements JokeService {
 
         return Flux.range(1, count)
                 .flatMap(body -> getJoke().onErrorResume(e -> Mono.empty()))
+                .publishOn(scheduler)
                 .collectList()
                 .block();
     }
