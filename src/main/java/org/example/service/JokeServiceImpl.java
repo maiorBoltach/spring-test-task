@@ -35,10 +35,13 @@ public class JokeServiceImpl implements JokeService {
 
         return Flux.range(1, count)
                 .log()
-                .publishOn(scheduler)
+                .parallel(5)
+                .runOn(scheduler, 1)
                 .flatMap(body -> getJoke()
                         .doOnRequest(v -> log.info("Request..."))
-                        .onErrorResume(e -> Mono.empty()))
+                        .doOnNext(v -> log.info("Finished"))
+                        .onErrorResume(e -> Mono.empty()), false, 1, 1)
+                .sequential()
                 .collectList()
                 .block();
     }
