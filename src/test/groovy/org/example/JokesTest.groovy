@@ -48,10 +48,10 @@ class JokesTest extends Specification {
         expect:
         def responseContent = mockMvc.perform(get("/jokes?count=" + count)
                 .accept(APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isOk())
                 .andReturn().response
         where:
-        count = 5
+        count = 20
     }
 
 }

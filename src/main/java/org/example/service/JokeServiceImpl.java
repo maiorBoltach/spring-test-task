@@ -21,7 +21,7 @@ public class JokeServiceImpl implements JokeService {
 
     public JokeServiceImpl(@Value("${app.jokes-service-url:https://official-joke-api.appspot.com/random_joke}") String jokesServiceUrl) {
         this.apiClient = WebClient.create(jokesServiceUrl);
-        this.scheduler = Schedulers.newBoundedElastic(5, 10, "group");
+        this.scheduler = Schedulers.newBoundedElastic(10, Integer.MAX_VALUE, "group");
     }
 
     @Override
@@ -34,8 +34,11 @@ public class JokeServiceImpl implements JokeService {
         }
 
         return Flux.range(1, count)
-                .flatMap(body -> getJoke().onErrorResume(e -> Mono.empty()))
+                .log()
                 .publishOn(scheduler)
+                .flatMap(body -> getJoke()
+                        .doOnRequest(v -> log.info("Request..."))
+                        .onErrorResume(e -> Mono.empty()))
                 .collectList()
                 .block();
     }
